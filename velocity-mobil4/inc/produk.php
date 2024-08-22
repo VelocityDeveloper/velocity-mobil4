@@ -237,7 +237,7 @@ function velocity_katalog_produk($atts)
                                 </div>
                                 <div class="p-2 col">
                                     <h4 class="mb-1 fs-6"><a class="fw-bold text-dark" href="<?php echo get_the_permalink($post->ID); ?>"><?php echo get_the_title($post->ID); ?></a></h4>
-                                    <div class="text-dark"><?php echo velocity_ak_harga($post->ID); ?></div>
+                                    <div class="text-dark"><?php echo velocity_harga($post->ID); ?></div>
                                     <div class="mt-2">
                                         <a class="btn btn-sm btn-dark rounded-0 lh-1 text-white" href="<?php echo get_the_permalink($post->ID); ?>"><small>Detail</small></a>
                                     </div>
