@@ -2,6 +2,7 @@
 
 // Register Custom Post Type & Taxonomy
 add_action('init', 'velocity_admin_init');
+if (!function_exists('velocity_admin_init')) {
 function velocity_admin_init()
 {
     register_post_type('produk', array(
@@ -29,10 +30,12 @@ function velocity_admin_init()
         )
     );
 }
+}
 
 
 
 // custom produk meta box
+if (!function_exists('add_custom_meta_box')) {
 function add_custom_meta_box()
 {
     $screens = array('produk');
@@ -45,8 +48,10 @@ function add_custom_meta_box()
         );
     }
 }
+}
 add_action('add_meta_boxes', 'add_custom_meta_box');
 
+if (!function_exists('vel_meta_box_callback')) {
 function vel_meta_box_callback($post)
 {
     wp_nonce_field('vel_metabox', 'myplugin_meta_box_nonce');
@@ -76,8 +81,10 @@ function vel_meta_box_callback($post)
     echo '</tr>';
     echo '</tbody></table>';
 }
+}
 
 
+if (!function_exists('vel_metabox')) {
 function vel_metabox($post_id)
 {
     if (!isset($_POST['myplugin_meta_box_nonce'])) {
@@ -118,10 +125,12 @@ function vel_metabox($post_id)
     update_post_meta($post_id, 'ak_kode', sanitize_text_field($_POST['ak_kode']));
     update_post_meta($post_id, 'ak_harga_dis', sanitize_text_field($_POST['ak_harga_dis']));
 }
+}
 add_action('save_post', 'vel_metabox');
 
 
 
+if (!function_exists('velocity_harga')) {
 function velocity_harga($postid = null)
 {
     global $post;
@@ -148,105 +157,67 @@ function velocity_harga($postid = null)
     $html .= '</span>';
     return $html;
 }
-
-
-
-// Update jumlah pengunjung dengan plugin WP-Statistics
-function velocity_allpage()
-{
-    global $wpdb, $post;
-    $postID = $post->ID;
-    $count_key = 'hit';
-    if (empty($post))
-        return false;
-    if (function_exists('WP_Statistics')) {
-        $table_name = $wpdb->prefix . "statistics_pages";
-        $results    = $wpdb->get_results("SELECT sum(count) as result_value FROM $table_name WHERE id = $postID");
-        $count = $results ? $results[0]->result_value : '0';
-        if ($count == '') {
-            delete_post_meta($postID, $count_key);
-            add_post_meta($postID, $count_key, '0');
-        } else {
-            update_post_meta($postID, $count_key, $count);
-        }
-    } else {
-        $user_ip = $_SERVER['REMOTE_ADDR']; //retrieve the current IP address of the visitor
-        $key = $user_ip . 'x' . $postID; //combine post ID & IP to form unique key
-        $value = array($user_ip, $postID); // store post ID & IP as separate values (see note)
-        $visited = get_transient($key); //get transient and store in variable
-
-        //check to see if the Post ID/IP ($key) address is currently stored as a transient
-        if (false === ($visited)) {
-
-            //store the unique key, Post ID & IP address for 12 hours if it does not exist
-            set_transient($key, $value, 60 * 60 * 12);
-
-            // now run post views function
-            $count = get_post_meta($postID, $count_key, true);
-            if ($count == '') {
-                $count = 0;
-                delete_post_meta($postID, $count_key);
-                add_post_meta($postID, $count_key, '0');
-            } else {
-                $count++;
-                update_post_meta($postID, $count_key, $count);
-            }
-        }
-    }
 }
-add_action('wp', 'velocity_allpage');
+
 
 
 // [velocity-produk]
+if (!function_exists('velocity_katalog_produk')) {
 function velocity_katalog_produk($atts)
 {
     ob_start();
     $atribut = shortcode_atts(array(
-        'style'     => 'grid',
-        'kategori'     => '', // pakai slug
-        'jumlah' => 6
+        'style'     => 'grid', // grid | list
+        'kategori'  => '',     // pakai slug
+        'jumlah'    => 6,
     ), $atts);
-    $args['posts_per_page'] = $atribut['jumlah'];
-    $args['post_type'] = 'produk';
+    $args['posts_per_page'] = (int) $atribut['jumlah'];
+    $args['post_type']      = 'produk';
     $kategori = $atribut['kategori'];
-    $lokasi = $atribut['lokasi'];
-    $style = $atribut['style'];
-    $taxquery = array();
+    $style    = ($atribut['style'] === 'list') ? 'list' : 'grid';
     if ($kategori) {
-        $taxquery[] = array(
-            'taxonomy' => 'kategori-produk',
-            'field'    => 'slug',
-            'terms'    => $kategori,
+        $args['tax_query'] = array(
+            array(
+                'taxonomy' => 'kategori-produk',
+                'field'    => 'slug',
+                'terms'    => $kategori,
+            ),
         );
-        $args['tax_query'] = $taxquery;
     }
     $wpex_query = new wp_query($args);
-    echo '<div class="velocity-produk row m-0">';
+    echo '<div class="velocity-produk row g-3' . (('list' === $style) ? ' row-cols-1' : ' row-cols-2 row-cols-md-3') . '">';
     foreach ($wpex_query->posts as $post) {
-        setup_postdata($post); ?>
-        <?php if ($style == 'list') { ?>
-            <div class="col-12">
-                <div class="bg-white row border-bottom pb-2">
-                    <div class="col-4 pe-0 pt-2">
-                    <?php } else { ?>
-                        <div class="col-sm-4 col-6 p-2 text-center">
-                            <div class="bg-white h-100 border">
-                                <div class="p-2">
-                                <?php } ?>
-                                <?php echo do_shortcode("[resize-thumbnail width='280' height='200' crop='false' upscale='true' post_id='" . $post->ID . "']"); ?>
-                                </div>
-                                <div class="p-2 col">
-                                    <h4 class="mb-1 fs-6"><a class="fw-bold text-dark" href="<?php echo get_the_permalink($post->ID); ?>"><?php echo get_the_title($post->ID); ?></a></h4>
-                                    <div class="text-dark"><?php echo velocity_harga($post->ID); ?></div>
-                                    <div class="mt-2">
-                                        <a class="btn btn-sm btn-dark rounded-0 lh-1 text-white" href="<?php echo get_the_permalink($post->ID); ?>"><small>Detail</small></a>
-                                    </div>
-                                </div>
-                            </div>
+        setup_postdata($post);
+        $pid = $post->ID;
+        if ('list' === $style) { ?>
+            <div class="col">
+                <div class="produk-item bg-white rounded-4 shadow-sm overflow-hidden h-100">
+                    <div class="row g-0">
+                        <div class="col-4 col-md-3"><?php echo velocity_mobil4_thumbnail($pid, 'ratio-4x3'); ?></div>
+                        <div class="col-8 col-md-9 p-3 d-flex flex-column">
+                            <h4 class="fs-6 fw-bold mb-2 lh-base"><a class="text-decoration-none text-dark" href="<?php echo esc_url(get_permalink($pid)); ?>"><?php echo esc_html(get_the_title($pid)); ?></a></h4>
+                            <div class="produk-price fw-bold mb-3"><?php echo velocity_harga($pid); ?></div>
+                            <div class="mt-auto"><a class="btn btn-sm btn-primary rounded-3" href="<?php echo esc_url(get_permalink($pid)); ?>">Detail</a></div>
                         </div>
-                <?php }
-            echo '</div>';
-            wp_reset_postdata();
-            return ob_get_clean();
-        }
-        add_shortcode('velocity-produk', 'velocity_katalog_produk');
+                    </div>
+                </div>
+            </div>
+        <?php } else { ?>
+            <div class="col">
+                <div class="produk-item bg-white rounded-4 shadow-sm overflow-hidden h-100 d-flex flex-column">
+                    <?php echo velocity_mobil4_thumbnail($pid, 'ratio-4x3'); ?>
+                    <div class="p-2 p-md-3 text-center d-flex flex-column flex-grow-1">
+                        <h4 class="fs-6 fw-bold mb-2 lh-base"><a class="text-decoration-none text-dark" href="<?php echo esc_url(get_permalink($pid)); ?>"><?php echo esc_html(get_the_title($pid)); ?></a></h4>
+                        <div class="produk-price fw-bold mb-3"><?php echo velocity_harga($pid); ?></div>
+                        <a class="btn btn-sm btn-primary rounded-3 mt-auto" href="<?php echo esc_url(get_permalink($pid)); ?>">Detail</a>
+                    </div>
+                </div>
+            </div>
+        <?php }
+    }
+    echo '</div>';
+    wp_reset_postdata();
+    return ob_get_clean();
+}
+}
+add_shortcode('velocity-produk', 'velocity_katalog_produk');

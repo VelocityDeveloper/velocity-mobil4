@@ -10,7 +10,7 @@ defined( 'ABSPATH' ) || exit;
 ?>
 
 <form method="get" id="searchform" action="<?php echo esc_url( home_url( '/' ) ); ?>">
-	<label class="sr-only" for="s"><?php esc_html_e( 'Search', 'justg' ); ?></label>
+	<label class="visually-hidden" for="s"><?php esc_html_e( 'Search', 'justg' ); ?></label>
 	<div class="input-group">
 		<input class="field form-control rounded-0" id="s" name="s" type="text"
 			placeholder="<?php esc_attr_e( 'Search', 'justg' ); ?>" value="<?php the_search_query(); ?>" required>
